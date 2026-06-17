@@ -1,0 +1,183 @@
+Introduction to Retrieval-Augmented Generation (RAG) in Academic Settings
+==========================================================================
+
+1. OVERVIEW
+-----------
+Retrieval-Augmented Generation (RAG) is a hybrid AI architecture that combines the strengths 
+of large language models (LLMs) with external knowledge retrieval systems. Unlike traditional 
+LLMs that rely solely on knowledge encoded during training, RAG systems dynamically retrieve 
+relevant documents at inference time to ground their responses in factual, up-to-date information.
+
+RAG was first introduced by Lewis et al. (2020) in the paper "Retrieval-Augmented Generation 
+for Knowledge-Intensive NLP Tasks." Since then, it has become one of the most widely adopted 
+architectures for building question-answering systems in enterprise and academic environments.
+
+
+2. CORE COMPONENTS OF A RAG SYSTEM
+------------------------------------
+
+2.1 Document Ingestion Pipeline
+The ingestion pipeline is responsible for loading raw documents, splitting them into smaller 
+chunks, and storing their vector representations in a database. Common chunking strategies include:
+- Fixed-size chunking: splits text into equal-length segments (e.g., 500 tokens)
+- Semantic chunking: splits at natural boundaries such as paragraphs or sections
+- Recursive character splitting: splits by hierarchy of separators (\n\n, \n, space)
+
+The chunk size significantly impacts retrieval quality. Smaller chunks (200-400 tokens) provide 
+more precise retrieval but may lose context. Larger chunks (600-1000 tokens) preserve context 
+but may introduce noise. A chunk size of 500 tokens with 50-token overlap is generally recommended 
+as a starting point for academic documents.
+
+2.2 Embedding Models
+Embedding models convert text chunks into dense vector representations (embeddings) that capture 
+semantic meaning. Semantically similar texts produce embeddings that are close together in vector 
+space, enabling similarity-based retrieval.
+
+Popular embedding models include:
+- sentence-transformers/all-MiniLM-L6-v2: lightweight, 384 dimensions, good for general use
+- nomic-embed-text: open-source, 768 dimensions, strong performance on academic text
+- OpenAI text-embedding-3-small: 1536 dimensions, high accuracy, requires API key
+- OpenAI text-embedding-3-large: 3072 dimensions, highest accuracy, higher cost
+
+For academic question-answering, nomic-embed-text is recommended as it performs well on 
+technical and scientific text without requiring an API key.
+
+2.3 Vector Databases
+Vector databases store embeddings and enable fast approximate nearest-neighbor (ANN) search. 
+Key vector databases used in RAG systems:
+
+- FAISS (Facebook AI Similarity Search): in-memory, no persistence, good for prototyping
+- Qdrant: production-ready, persistent storage, supports filtering and payload metadata
+- Pinecone: fully managed cloud service, easy scaling, requires subscription
+- Weaviate: open-source, supports hybrid search (dense + sparse)
+- ChromaDB: lightweight, easy setup, good for small-scale applications
+
+Qdrant is recommended for production RAG systems due to its persistent storage, 
+REST API, and support for rich metadata filtering.
+
+2.4 Retrieval Strategies
+The retrieval step finds the most relevant chunks for a given query. Common strategies:
+
+- Cosine similarity search: measures angle between query and document vectors
+- Maximum Marginal Relevance (MMR): balances relevance with diversity of results
+- Hybrid search: combines dense vector search with sparse BM25 keyword search
+- Reranking: applies a cross-encoder model to reorder retrieved chunks by relevance
+
+A typical RAG pipeline retrieves the top-10 chunks by cosine similarity, then applies 
+reranking to keep the top-3 to top-5 most relevant chunks for the LLM context window.
+
+2.5 Answer Synthesis
+The synthesis step passes the retrieved chunks and original query to an LLM, which generates 
+a grounded answer. The prompt typically follows this structure:
+
+  "Answer the question using ONLY the provided context. 
+   Cite the source document when referencing specific information.
+   If the answer is not in the context, say you don't know."
+
+This grounding instruction is critical — it prevents the LLM from hallucinating answers 
+not supported by the retrieved documents.
+
+
+3. EVALUATION METRICS FOR RAG SYSTEMS
+---------------------------------------
+
+3.1 Retrieval Metrics
+- Recall@K: fraction of relevant documents retrieved in the top-K results
+- Precision@K: fraction of retrieved top-K documents that are relevant
+- Mean Reciprocal Rank (MRR): measures the rank position of the first relevant result
+- Normalized Discounted Cumulative Gain (nDCG): accounts for position of relevant results
+
+3.2 Generation Metrics
+- Faithfulness: measures whether the answer is grounded in the retrieved context
+- Answer Relevance: measures whether the answer addresses the question
+- Context Precision: measures the signal-to-noise ratio of retrieved chunks
+- ROUGE-L: measures lexical overlap between generated and reference answers
+- BERTScore: measures semantic similarity between generated and reference answers
+
+3.3 End-to-End Metrics
+- Human evaluation: domain experts rate answer quality on a 1-5 Likert scale
+- Exact Match (EM): binary score for factual questions with definitive answers
+- F1 Score: token-level overlap between predicted and ground-truth answers
+
+
+4. APPLICATIONS IN ACADEMIC SETTINGS
+--------------------------------------
+
+4.1 Student Query Answering
+RAG systems are particularly effective for answering student questions about course materials.
+By indexing lecture notes, textbooks, and research papers, the system can provide accurate,
+cited answers drawn directly from authoritative sources rather than general LLM knowledge.
+
+Studies have shown that RAG-based academic assistants achieve 80-90% student satisfaction 
+rates and reduce instructor response time by 40-60% for frequently asked questions.
+
+4.2 Research Paper Analysis
+RAG enables researchers to query across large collections of papers. Use cases include:
+- Finding papers that discuss specific methodologies
+- Comparing experimental results across studies
+- Identifying research gaps in a literature review
+- Extracting structured data from unstructured paper text
+
+4.3 Exam Preparation
+Students can upload their study materials and ask targeted questions to test their understanding.
+The system retrieves the most relevant passages and synthesises concise explanations, 
+functioning as a personalised tutor grounded in course-specific content.
+
+
+5. LIMITATIONS AND CHALLENGES
+-------------------------------
+
+5.1 Chunking Quality
+Poor chunking can split related concepts across chunk boundaries, reducing retrieval accuracy.
+Tables, figures, equations, and code blocks are particularly challenging to chunk effectively.
+
+5.2 Embedding Model Limitations
+Embedding models may struggle with highly technical or domain-specific terminology not well 
+represented in their training data. Domain-specific fine-tuning can improve performance 
+but requires labelled data and additional compute.
+
+5.3 Context Window Constraints
+LLMs have limited context windows (e.g., 8K-128K tokens). If retrieved chunks are too long 
+or too many, important information may be truncated. Careful reranking and chunk size 
+selection is essential.
+
+5.4 Hallucination Risk
+Even with retrieved context, LLMs can still hallucinate or misinterpret retrieved information.
+Faithfulness evaluation and human-in-the-loop review remain important for high-stakes applications.
+
+5.5 Latency
+RAG adds retrieval latency on top of LLM inference time. Optimising vector search (ANN 
+algorithms, index types), caching frequent queries, and using smaller embedding models 
+can reduce end-to-end latency.
+
+
+6. BEST PRACTICES
+------------------
+
+1. Use chunk overlap (10-15% of chunk size) to avoid losing context at boundaries
+2. Store rich metadata (source, page number, section title) alongside embeddings
+3. Apply reranking after initial retrieval to improve precision
+4. Use hybrid search (dense + sparse) for technical documents with specific terminology
+5. Evaluate retrieval and generation separately to isolate failure modes
+6. Implement query expansion or HyDE (Hypothetical Document Embeddings) for short queries
+7. Cache embeddings of frequently accessed documents to reduce compute costs
+8. Monitor answer faithfulness in production using automated evaluation pipelines
+
+
+7. REFERENCES
+--------------
+
+Lewis, P., et al. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. 
+  NeurIPS 2020. https://arxiv.org/abs/2005.11401
+
+Gao, Y., et al. (2023). Retrieval-Augmented Generation for Large Language Models: A Survey.
+  arXiv:2312.10997. https://arxiv.org/abs/2312.10997
+
+Karpukhin, V., et al. (2020). Dense Passage Retrieval for Open-Domain Question Answering.
+  EMNLP 2020. https://arxiv.org/abs/2004.04906
+
+Reimers, N., & Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese 
+  BERT-Networks. EMNLP 2019. https://arxiv.org/abs/1908.10084
+
+Johnson, J., Douze, M., & Jégou, H. (2019). Billion-scale similarity search with GPUs.
+  IEEE Transactions on Big Data. https://arxiv.org/abs/1702.08734
