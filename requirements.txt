@@ -1,0 +1,17 @@
+fastapi>=0.111
+uvicorn>=0.29
+python-multipart>=0.0.9
+pydantic>=2.7
+langchain>=0.2
+langchain-community>=0.2
+langchain-openai>=0.1
+qdrant-client>=1.9
+sentence-transformers>=2.7
+transformers>=4.40
+torch>=2.2
+python-dotenv>=1.0
+unstructured>=0.14
+pypdf>=4.2
+ollama>=0.2
+streamlit>=1.35
+requests>=2.31
